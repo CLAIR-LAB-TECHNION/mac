@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ..utils import get_elements_order
+from mac.utils import get_elements_order
 
 
 class Coordinator(ABC):
