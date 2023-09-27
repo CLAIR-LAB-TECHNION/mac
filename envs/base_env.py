@@ -1,17 +1,34 @@
-import gymnasium as gym
-from gym.spaces import Dict as GymDict, Discrete, Box
 import logging
+import gym
+from gym.spaces import Discrete, Box
 
 
 class BaseEnv(gym.Env):
     """
-    Base class for all environments.
+    Base class for custom environments compatible with RLlib.
+
+    This class provides a common structure for creating RL environments. It extends the
+    `gym.Env` class and includes methods that must be implemented by derived
+    environments.
+
+    Args:
+        env: The underlying environment.
+
+    Attributes:
+        env (gym.Env): The underlying environment.
+        logger (logging.Logger): A logger for environment-specific messages.
+        action_space (gym.Space): The action space of the environment.
+        observation_space (gym.Space): The observation space of the environment.
+        agents (list): List of possible agents in the environment.
+        num_agents (int): The number of agents in the environment.
     """
 
     def __init__(self, env):
         """
         Initialize the environment.
-        :param env: .
+
+        Args:
+            env (gym.Env): The underlying environment.
         """
         self.env = env
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -30,38 +47,75 @@ class BaseEnv(gym.Env):
     def _init_env(self):
         """
         Initialize the environment.
+
+        This method should be implemented by derived classes to perform any
+        environment-specific initialization.
         """
         raise NotImplementedError
 
     def reset(self):
         """
         Reset the environment.
-        :return: (object) Initial observation.
+
+        Returns:
+            object: Initial observation.
         """
         raise NotImplementedError
 
     def step(self, action):
         """
         Perform an action in the environment.
-        :param action: (object) Action to perform.
-        :return: (object, float, bool, dict) Observation, reward, done, info.
+
+        Args:
+            action (object): Action to perform.
+
+        Returns:
+            tuple: A tuple containing:
+                - object: Observation
+                - float: Reward
+                - bool: Done flag
+                - dict: Additional information
         """
         raise NotImplementedError
 
     def render(self, mode="human"):
         """
         Render the environment.
-        :param mode: (str) Rendering mode.
+
+        Args:
+            mode (str, optional): Rendering mode. Defaults to "human".
+
+        Raises:
+            NotImplementedError: This method should be implemented for rendering.
+
+        Note:
+            This method is not necessary for RL training but can be used for
+            visualization.
+
         """
         raise NotImplementedError
 
     def close(self):
         """
         Close the environment.
+
+        This method should release any resources used by the environment.
+
+        Raises:
+            NotImplementedError: This method should be implemented for cleanup.
         """
         raise NotImplementedError
 
     def get_env_info(self):
+        """
+        Get information about the environment.
+
+        Returns:
+            dict: A dictionary containing environment information.
+                - "space_obs" (gym.Space): Observation space
+                - "space_act" (gym.Space): Action space
+                - "num_agents" (int): Number of agents
+        """
         env_info = {
             "space_obs": self.observation_space,
             "space_act": self.action_space,
