@@ -67,7 +67,7 @@ class BaseCoordinator(ABC):
 
             iteration_counter += 1
             [step_data, joint_action] = self.run_step(step_data)
-            done = self.is_done(step_data)
+            done = self.is_done()
 
     @abstractmethod
     def run_step(self, step_data):
