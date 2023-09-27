@@ -83,15 +83,24 @@ class BaseCoordinator(ABC):
         step_data = self.env_wrapper.step(joint_action)
         return step_data
 
-    @abstractmethod
     def get_initial_data(self):
         """
         Get initial data for the coordination process.
 
         Returns:
-            object: Initial data for the coordination process.
+            tuple: A tuple containing:
+                - dict: Initial observations for agents.
+                - dict: Initial rewards for agents.
+                - dict: Initial termination flags for agents.
+                - dict: Initial truncation flags for agents.
+                - dict: Additional information for agents.
         """
-        raise NotImplementedError
+        obs, infos = self.env_wrapper.reset()
+        rewards = {agent_id: 0 for agent_id in obs}
+        terms = {agent_id: False for agent_id in obs}
+        truncs = {agent_id: False for agent_id in obs}
+
+        return obs, rewards, terms, truncs, infos
 
     @abstractmethod
     def get_ids(self):

@@ -52,3 +52,6 @@ class TaxiWrapper(BaseEnv):
     def is_done(self, step_data):
         return self.env.env_done()
 
+    def transform_action_dict_to_env_format(self, actions) -> dict:
+        raise NotImplementedError
+

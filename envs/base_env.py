@@ -123,3 +123,15 @@ class BaseEnv(gym.Env):
         }
         return env_info
 
+    def transform_action_dict_to_env_format(self, actions) -> dict:
+        """
+        Transform the action dictionary to the format used by the environment.
+
+        Args:
+            actions (dict): Dictionary containing actions for each agent.
+
+        Returns:
+            object: The transformed action.
+        """
+        raise NotImplementedError
+

@@ -33,25 +33,6 @@ class CentralizedCoordinator(BaseCoordinator):
         super().__init__(env, central_agent)
         self.central_agent = central_agent
 
-    def get_initial_data(self):
-        """
-        Get initial data for the coordination process.
-
-        Returns:
-            tuple: A tuple containing:
-                - dict: Initial observations for agents.
-                - dict: Initial rewards for agents.
-                - dict: Initial termination flags for agents.
-                - dict: Initial truncation flags for agents.
-                - dict: Additional information for agents.
-        """
-        obs, infos = self.env_wrapper.reset()
-        rewards = {agent_id: 0 for agent_id in obs}
-        terms = {agent_id: False for agent_id in obs}
-        truncs = {agent_id: False for agent_id in obs}
-
-        return obs, rewards, terms, truncs, infos
-
     def run_step(self, step_data):
         """
         Run a step of the coordination process.
