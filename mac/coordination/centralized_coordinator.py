@@ -1,4 +1,4 @@
-from base_coordinator import BaseCoordinator
+from .base_coordinator import BaseCoordinator
 
 
 class CentralizedCoordinator(BaseCoordinator):

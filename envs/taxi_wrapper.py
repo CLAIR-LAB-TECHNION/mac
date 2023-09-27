@@ -1,4 +1,4 @@
-from base_env import BaseEnv
+from .base_env import BaseEnv
 import time
 
 SLEEP_TIME = 0.2
