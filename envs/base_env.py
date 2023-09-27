@@ -1,6 +1,6 @@
 import logging
-import gym
-from gym.spaces import Discrete, Box
+import gymnasium as gym
+from gym.spaces import Dict as GymDict, Discrete, Box
 
 
 class BaseEnv(gym.Env):
