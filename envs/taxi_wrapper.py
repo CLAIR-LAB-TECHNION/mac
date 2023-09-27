@@ -49,6 +49,6 @@ class TaxiWrapper(BaseEnv):
         """
         self.env.close()
 
-    def is_done(self):
+    def is_done(self, step_data):
         return self.env.env_done()
 
