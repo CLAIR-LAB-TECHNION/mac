@@ -20,7 +20,8 @@ class TaxiWrapper(BaseEnv):
         Reset the environment.
         :return: (object) Initial observation.
         """
-        out = self.env.reset(return_info=True)
+        # out = self.env.reset(return_info=False)
+        out = self.env.reset()
         time.sleep(SLEEP_TIME)
         self.env.render()
         return out
@@ -54,4 +55,5 @@ class TaxiWrapper(BaseEnv):
 
     def transform_action_dict_to_env_format(self, actions) -> dict:
         raise NotImplementedError
+
 
