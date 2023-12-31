@@ -14,40 +14,80 @@ class CommunicationSpec:
     def get_communication_size(self, ) -> int:
         pass
 
+
+class CommunicationMedium:
+    def __init__(self, type: str='tcp') -> None:
+        self.incoming_msgs = {}
+        self.past_incoming_msgs = {}
+
+    def set_agent_msgs(self, src_id: str, target_ids: [list, np.array], msgs: [list, np.array]): # should we include target_id?
+        """set the messages buffer for a given agent id and target id"""
+        if target_id not in self.incoming_msgs:
+            self.incoming_msgs[target_id] = {}
+        for target_id, msg in zip(target_ids, msgs):
+            self.incoming_msgs[target_id] = {src_id: msg}
+
+    def get_agent_msgs(self, id):
+        """gets the messages buffer for a given agent id and target id"""
+        return self.past_incoming_msgs[id]
+    
+    def step(self, ):
+        """step the communication medium"""
+        self.past_incoming_msgs = self.incoming_msgs
+        self.incoming_msgs = {}
+
+class AgentProxy:
+    def __init__(self, agent) -> None:
+        self.agent = agent
+
+    def get_agent_action_space(self, ):
+        """
+        Take into account the communication action space in addition to env action space
+        """
+        # depends on the communication protocol
+
+    def get_agent_observation_space(self, ):
+        """
+        Take into account the communication space in addition to env observation space
+        """
+        # depends on the communication protocol
+
+    def sensor_func(self, step_data, communiation_msgs):
+        """
+        operates uppon a step data and communication messages and returns a new step_data
+        """
+        # do some logic here
+        return step_data, communiation_msgs
+
+    def comm_protocol(self):
+        """
+        it should be a function or a class?
+        """
+        pass
+
+    def get_action(self, step_data, communiation_msgs):
+        """
+        returns the action for the agent and the communication messages
+        """
+        some_res  = self.sensor_func(step_data, communiation_msgs) # apply sensor function over step data? or msg only?
+        action = self.agent.get_action(step_data) # plug the res as an input to agent?
+        target_ids, msgs = self.comm_protocol(action) # apply the communication protocol over the action, and extract the msgs for each target (can be broadcast also)
+        env_action = action['env_action']
+        return env_action, target_ids, msgs
+
 class DecentralizedCoordinatorComm(BaseCoordinator):
-    def __init__(self, env, agents, communication_spec, b_random_order=True):
+    def __init__(self, env, agents, communication_medium: CommunicationMedium, b_random_order=True):
         super().__init__(env, agents)
-        self.communication_spec = communication_spec
+        self.agent_proxies = {agent_id: AgentProxy(self.agents[agent_id]) for agent_id in self.agents}
+
+        self.communication_medium = communication_medium
         self.b_random_order = b_random_order
-        # env.env because its a warpped env
-        self.agents_observation_spaces, self.agents_action_spaces = DecentralizedCoordinatorComm.create_agents_action_obs_space(env.env, communication_spec)
-        self.last_msgs_send = {agent_id: {target_id: np.zeros_like(shape) for target_id,shape in zip(spec['targets'], spec['shape'])} for agent_id, spec in communication_spec.items()}
 
+    def get_agent_observation_space(self, agent_id):
+        return self.agent_proxies[agent_id].get_agent_observation_space()
 
-    def create_agents_action_obs_space(env, communication_spec):
-        """
-        Build agents.
-
-        Args:
-            agents (dict): Dictionary of agents in the environment.
-            communication_spec (dict): Dictionary of communication specifications.
-        """
-
-        env.possible_agents = env.possible_agents
-        agents_action_spaces = {agent_id: {'env_action': env.action_space(agent_id)} for agent_id in env.possible_agents}
-        agents_observation_spaces = {agent_id: {'env_obs': env.observation_spaces[agent_id]} for agent_id in env.possible_agents}
-        
-        for agent_id, spec in communication_spec.items():
-            for sendner_id, s in communication_spec.items():
-                for i, target in enumerate(s['targets']):
-                    if agent_id == target:
-                        agents_observation_spaces[agent_id] = Dict({f'from_{sendner_id}': Box(low=0, high=1, shape=(s['shape'][i],)), **agents_observation_spaces[agent_id]})
-                
-            agent_comm_action_space = {f'to_{target_id}': Box(low=0, high=1, shape=(spec['shape'][j],)) for j, target_id in enumerate(spec['targets'])}
-            
-            agents_action_spaces[agent_id] = Dict({**agent_comm_action_space, **agents_action_spaces[agent_id]})
-
-        return agents_observation_spaces, agents_action_spaces
+    def get_agent_action_space(self, agent_id):
+        return self.agent_proxies[agent_id].get_agent_action_space()
 
 
     def get_ids(self):
@@ -75,24 +115,19 @@ class DecentralizedCoordinatorComm(BaseCoordinator):
         agents_order = get_elements_order(self.b_random_order, agents_ids)
 
         # Returning a dictionary of actions to be performed by each agent
-        actions = {}
         all_obs, all_rewards, all_terms, all_truncs, all_infos = step_data
         all_env_actions = {}
         for agent_id in agents_order:
-            agent = self.agents[agent_id]
+            agent_proxy = self.agent_proxies[agent_id]
             obs, rewards, terms, truncs, infos = all_obs[agent_id], all_rewards[agent_id], all_terms[agent_id], all_truncs[agent_id], all_infos[agent_id]
             obs = {'env_obs': obs}
-            for sender_id, spec in self.communication_spec.items():
-                for i, target_id in enumerate(spec['targets']):
-                    if target_id == agent_id:
-                        obs[f'from_{sender_id}'] = self.last_msgs_send[sender_id][agent_id]
+            ### communication object
+            agent_input_msgs = self.communication_medium.get_agent_msgs(id=agent_id)
             agent_step_data = obs, rewards, terms, truncs, infos
-            actions = agent.get_action(agent_step_data)
-            env_action = actions['env_action']
-            all_env_actions[agent_id] = env_action
-            del actions['env_action']
-            actions = {k.replace('to_', ''):v for k,v in actions.items()} # just to remove the to_ prefix
-            self.last_msgs_send[agent_id] = actions
+            action, target_ids, msgs = agent_proxy.get_action(agent_step_data, agent_input_msgs)
+            all_env_actions[agent_id] = action
+            self.communication_medium.set_agent_msgs(agent_id, target_ids=target_ids, msgs=msgs)
+        self.communication_medium.step() # nesccery for updating the past msgs
         return all_env_actions
 
 
