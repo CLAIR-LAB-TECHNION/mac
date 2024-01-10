@@ -3,77 +3,8 @@ from mac.utils import get_elements_order
 from gymnasium.spaces import Dict
 from gymnasium.spaces import Box
 import numpy as np
-
-class CommunicationSpec:
-    def __init__(self, ) -> None:
-        pass
-
-    def get_communications_shape(self, ) -> int:
-        pass
-
-    def get_communication_size(self, ) -> int:
-        pass
-
-
-class CommunicationMedium:
-    def __init__(self, type: str='tcp') -> None:
-        self.incoming_msgs = {}
-        self.past_incoming_msgs = {}
-
-    def set_agent_msgs(self, src_id: str, target_ids: [list, np.array], msgs: [list, np.array]): # should we include target_id?
-        """set the messages buffer for a given agent id and target id"""
-        if target_id not in self.incoming_msgs:
-            self.incoming_msgs[target_id] = {}
-        for target_id, msg in zip(target_ids, msgs):
-            self.incoming_msgs[target_id] = {src_id: msg}
-
-    def get_agent_msgs(self, id):
-        """gets the messages buffer for a given agent id and target id"""
-        return self.past_incoming_msgs[id]
-    
-    def step(self, ):
-        """step the communication medium"""
-        self.past_incoming_msgs = self.incoming_msgs
-        self.incoming_msgs = {}
-
-class AgentProxy:
-    def __init__(self, agent) -> None:
-        self.agent = agent
-
-    def get_agent_action_space(self, ):
-        """
-        Take into account the communication action space in addition to env action space
-        """
-        # depends on the communication protocol
-
-    def get_agent_observation_space(self, ):
-        """
-        Take into account the communication space in addition to env observation space
-        """
-        # depends on the communication protocol
-
-    def sensor_func(self, step_data, communiation_msgs):
-        """
-        operates uppon a step data and communication messages and returns a new step_data
-        """
-        # do some logic here
-        return step_data, communiation_msgs
-
-    def comm_protocol(self):
-        """
-        it should be a function or a class?
-        """
-        pass
-
-    def get_action(self, step_data, communiation_msgs):
-        """
-        returns the action for the agent and the communication messages
-        """
-        some_res  = self.sensor_func(step_data, communiation_msgs) # apply sensor function over step data? or msg only?
-        action = self.agent.get_action(step_data) # plug the res as an input to agent?
-        target_ids, msgs = self.comm_protocol(action) # apply the communication protocol over the action, and extract the msgs for each target (can be broadcast also)
-        env_action = action['env_action']
-        return env_action, target_ids, msgs
+from mac.coordination.communication_medium import CommunicationMedium
+from mac.coordination.agent_proxy import AgentProxy
 
 class DecentralizedCoordinatorComm(BaseCoordinator):
     def __init__(self, env, agents, communication_medium: CommunicationMedium, b_random_order=True):
