@@ -1,1 +1,1 @@
-# MAC
+# Multi-Agent Control
